@@ -39,7 +39,6 @@ The code will be executed and you'll get the output.
 
 
 def solve(question: str, log_path) -> dict:
-    """Run the agent loop and return the final JSON dict."""
     from logger import log_step
 
     log_step(log_path, {"event": "start", "question": question})
@@ -50,7 +49,6 @@ def solve(question: str, log_path) -> dict:
     ]
 
     for i in range(6):
-        # ── Call the LLM ────────────────────────────────────────
         try:
             resp = client.chat.completions.create(
                 model=MODEL,
@@ -65,13 +63,11 @@ def solve(question: str, log_path) -> dict:
         content = resp.choices[0].message.content.strip()
         log_step(log_path, {"event": f"llm_turn_{i}", "content": content})
 
-        # ── Try to parse a final JSON answer ────────────────────
         parsed = _try_parse_json(content)
         if parsed and "answer" in parsed:
             log_step(log_path, {"event": "final_answer", "result": parsed})
             return parsed
 
-        # ── Extract and run code if present ─────────────────────
         code = _extract_code(content)
         if code:
             log_step(log_path, {"event": "code_exec", "code": code})
@@ -89,7 +85,6 @@ def solve(question: str, log_path) -> dict:
                 ),
             })
         else:
-            # No code block — nudge the model to just give JSON
             messages.append({"role": "assistant", "content": content})
             messages.append({
                 "role": "user",
@@ -104,23 +99,17 @@ def solve(question: str, log_path) -> dict:
     return {"answer": None, "log_url": "PLACEHOLDER"}
 
 
-# ── Helpers ─────────────────────────────────────────────────────
-
 def _try_parse_json(text: str):
-    """Try to extract a JSON object from LLM output."""
-    # 1. Direct parse
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
-    # 2. Strip markdown fences  ```json ... ```
     m = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", text, re.DOTALL)
     if m:
         try:
             return json.loads(m.group(1))
         except json.JSONDecodeError:
             pass
-    # 3. Find outermost { ... }
     m = re.search(r"\{.*\}", text, re.DOTALL)
     if m:
         try:
@@ -131,7 +120,6 @@ def _try_parse_json(text: str):
 
 
 def _extract_code(text: str):
-    """Pull a python code block from LLM output."""
     m = re.search(r"```python\s*\n(.*?)```", text, re.DOTALL)
     if m:
         return m.group(1).strip()
@@ -139,7 +127,6 @@ def _extract_code(text: str):
 
 
 def _run_code(code: str) -> str:
-    """Execute Python in a subprocess with a 60-s timeout."""
     with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
         f.write(code)
         f.flush()
@@ -147,9 +134,7 @@ def _run_code(code: str) -> str:
     try:
         r = subprocess.run(
             ["python", fname],
-            capture_output=True,
-            text=True,
-            timeout=60,
+            capture_output=True, text=True, timeout=60,
         )
         out = r.stdout
         if r.stderr:
