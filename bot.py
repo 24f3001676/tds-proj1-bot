@@ -22,12 +22,12 @@ PORT = int(os.environ.get("PORT", 8080))
 _pending: dict[int, asyncio.Task] = {}
 BUFFER_SECONDS = 6
 
-
-# ── Tiny health + log HTTP server ───────────────────────────────
+# ── Log directory ───────────────────────────────────────────────
 LOG_DIR = Path("logs")
 LOG_DIR.mkdir(exist_ok=True)
 
 
+# ── Tiny HTTP server (health + logs) ────────────────────────────
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/health":
@@ -50,7 +50,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body.encode("utf-8"))
 
     def log_message(self, fmt, *args):
-        pass  # silence
+        pass
 
 
 def start_http_server():
@@ -95,11 +95,15 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 # ── Main ────────────────────────────────────────────────────────
 def main():
-    # Start HTTP server in background thread
+    # ★ FIX for Python 3.12+/3.14: explicitly create the event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    # Start HTTP server in a daemon thread
     t = threading.Thread(target=start_http_server, daemon=True)
     t.start()
 
-    # Start Telegram bot (blocks)
+    # Start Telegram bot (blocks on main thread)
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
