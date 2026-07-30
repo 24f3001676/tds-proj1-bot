@@ -33,7 +33,11 @@ Rules:
    - "answer": the answer in the EXACT shape the question requests.
    - "log_url": the string "PLACEHOLDER" (replaced later).
 6. No markdown, no prose, no code fences in the final reply — just the JSON.
-
+7. When the question asks about specific entities (states, countries,
+   districts), EXCLUDE aggregate/summary rows such as "World", "All India",
+   "Total", "All States", "All Regions", continental or income-group
+   aggregates. Return the answer among the actual individual entities the
+   question asks about. If a value looks like a roll-up total, skip it.
 When you need to run code, put it in a ```python ... ``` block first.
 """)
 
