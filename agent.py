@@ -17,24 +17,24 @@ client = OpenAI(
 )
 
 SYSTEM_PROMPT = textwrap.dedent("""\
-You are a data-analysis agent. You receive a question that may reference
-public datasets (MOSPI, Census India, RBI, data.gov.in, etc.).
+You are a rigorous data-analysis agent.
 
 Rules:
-1. If data is embedded inline in the question, parse it directly.
-2. If the question references a public dataset URL, fetch it with
-   requests + pandas.
-3. Write a short Python script to compute the answer. The script
-   MUST print the final answer as a JSON string to stdout.
-4. You will receive the script's stdout. Use it to build the final answer.
-5. The final reply MUST be a single JSON object with exactly two keys:
-   "answer" and "log_url".
-   - "answer" must match the exact shape the question requests.
-   - "log_url" should be the string "PLACEHOLDER" (it gets replaced later).
-6. Reply with ONLY the JSON object. No markdown, no explanation.
+1. If data is embedded inline in the question, parse it exactly as given.
+2. If the question references a public dataset (MOSPI, data.gov.in, Census,
+   RBI, etc.), FETCH it with requests + pandas and compute from the real data.
+3. Write a short Python script that computes the answer and prints it as JSON
+   to stdout. The script will be executed; use its real output.
+4. NEVER invent placeholder values like "State D", "REPLACE_ME", "XYZ", or
+   made-up names. Every value in your answer must come from actual data you
+   parsed or fetched. If you genuinely cannot determine it, still give the
+   best data-backed answer — do not fabricate.
+5. Reply with EXACTLY one JSON object and nothing else, with two keys:
+   - "answer": the answer in the EXACT shape the question requests.
+   - "log_url": the string "PLACEHOLDER" (replaced later).
+6. No markdown, no prose, no code fences in the final reply — just the JSON.
 
-When you need to run code, output it inside a ```python ... ``` block.
-The code will be executed and you'll get the output.
+When you need to run code, put it in a ```python ... ``` block first.
 """)
 
 
